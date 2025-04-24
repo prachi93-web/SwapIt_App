@@ -1,32 +1,21 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
-
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
+import { View, ActivityIndicator } from "react-native";
+import { useRootNavigationState } from "expo-router"; // ✅ Correct hook
 
 export default function NotFoundScreen() {
+  const router = useRouter();
+  const navigationState = useRootNavigationState(); // ✅ Get navigation state
+
+  useEffect(() => {
+    if (navigationState?.key) {
+      router.replace("/home"); // ✅ Redirect only when navigation is ready
+    }
+  }, [navigationState?.key]);
+
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen doesn't exist.</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen!</ThemedText>
-        </Link>
-      </ThemedView>
-    </>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <ActivityIndicator size="large" color="#8E62D8" />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});
