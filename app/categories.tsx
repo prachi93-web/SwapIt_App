@@ -77,7 +77,7 @@ const CategoriesScreen = () => {
       {/* Scrollable Categories */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 50 }}
       >
         {categoriesData.map((section, index) => (
           <View key={index} style={styles.section}>

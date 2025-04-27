@@ -162,6 +162,7 @@ const DashboardScreen = () => {
           numColumns={2}
           columnWrapperStyle={styles.row}
           keyExtractor={(item, index) => (item?._id ?? index).toString()}
+          contentContainerStyle={{ paddingBottom: 50 }}
           renderItem={({ item }) => (
             <View style={styles.card}>
               <Image
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#7E4DD1",
     marginBottom: 15,
-    marginLeft: 15,
+    marginLeft: 4,
   },
   row: {
     flex: 1,

@@ -18,7 +18,7 @@
 
 | Frontend      | Backend    | Database  | Auth        |
 |---------------|------------|-----------|-------------|
-| React Native  | Node.js    | MongoDB   | Clerk/Auth  |
+| React Native  | Node.js    | MongoDB   | Firebase console/Auth  |
 
 ---
 

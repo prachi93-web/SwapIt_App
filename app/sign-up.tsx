@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { signUp } from "../src/authService"; // ✅ Importing correctly
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -31,7 +32,14 @@ export default function SignUpScreen() {
       const user = await signUp(fullName, contactNumber, email, password);
       console.log("User Created:", user);
   
-      // ✅ Navigate to dashboard immediately after successful signup
+      // Store user data in AsyncStorage
+      await AsyncStorage.setItem("user", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        fullName: fullName
+      }));
+  
+      // Navigate to dashboard after successful signup
       router.replace("/dashboard");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -108,7 +116,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: "Itim",
     marginBottom: 50,
     color: "#7E4DD1",
   },
@@ -134,7 +141,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 22,
-    fontFamily: "Itim",
   },
   signupText: {
     marginTop: 10,

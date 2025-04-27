@@ -1,15 +1,30 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { Ionicons, FontAwesome5, Entypo } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
 const ProfileScreen = () => {
   const router = useRouter();
-  const name = "Prachi Mehetre";
+  const [user, setUser] = useState<{ fullName: string } | null>(null);
   const location = "India";
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("user");
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const getInitials = (fullName: string) => {
     const names = fullName.trim().split(" ");
@@ -18,7 +33,7 @@ const ProfileScreen = () => {
       : (names[0][0] + names[1][0]).toUpperCase();
   };
 
-  const initials = getInitials(name);
+  const initials = user?.fullName ? getInitials(user.fullName) : "";
 
   const handleLogout = () => {
     router.replace("/sign-in");
@@ -32,8 +47,8 @@ const ProfileScreen = () => {
     <View style={styles.background}>
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <BlurView intensity={50} tint="light" style={styles.backBlur}>
-          <Ionicons name="arrow-back" size={20} color="#333" />
+        <BlurView intensity={20} style={styles.backBlur}>
+          <Ionicons name="arrow-back" size={24} color="#7E4DD1" />
         </BlurView>
       </TouchableOpacity>
 
@@ -43,10 +58,9 @@ const ProfileScreen = () => {
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={{ marginTop: 10, alignItems: "center" }}>
-            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.name}>{user?.fullName || "User"}</Text>
             <Text style={styles.location}>{location}</Text>
           </View>
-
         </View>
 
         <View style={styles.menu}>
@@ -61,7 +75,6 @@ const ProfileScreen = () => {
           />
           <MenuItem icon={<Ionicons name="settings-outline" size={20} color="black" />} label="Settings" />
         </View>
-
 
         <TouchableOpacity style={styles.logout} onPress={handleLogout}>
           <Entypo name="log-out" size={20} color="red" />

@@ -7,10 +7,13 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import axios, { AxiosError } from "axios";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import SwapRequest from "./swaprequest";
 
 // Define the type for Product
 interface Product {
@@ -23,10 +26,11 @@ interface Product {
 
 const CategoryProductsScreen = () => {
   const { category } = useLocalSearchParams();
-  const [products, setProducts] = useState<Product[]>([]); // State with the Product type
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wishlist, setWishlist] = useState<string[]>([]); // List of product IDs
-  const [isSwapModalVisible, setIsSwapModalVisible] = useState(false); // Modal state (if needed later)
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [isSwapModalVisible, setIsSwapModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchCategoryProducts = async () => {
@@ -48,16 +52,42 @@ const CategoryProductsScreen = () => {
       }
     };
 
+    const loadWishlist = async () => {
+      try {
+        const storedWishlist = await AsyncStorage.getItem("wishlist");
+        if (storedWishlist) {
+          setWishlist(JSON.parse(storedWishlist));
+        }
+      } catch (error) {
+        console.error("Error loading wishlist:", error);
+      }
+    };
+
     if (category) {
       fetchCategoryProducts();
+      loadWishlist();
     }
   }, [category]);
 
-  const toggleWishlist = (item: Product) => {
-    if (wishlist.includes(item._id)) {
-      setWishlist((prev) => prev.filter((id) => id !== item._id));
-    } else {
-      setWishlist((prev) => [...prev, item._id]);
+  const toggleWishlist = async (item: Product) => {
+    try {
+      let updatedWishlist;
+      const storedItems = await AsyncStorage.getItem("wishlistItems");
+      let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
+
+      if (wishlist.includes(item._id)) {
+        updatedWishlist = wishlist.filter((id) => id !== item._id);
+        wishlistItems = wishlistItems.filter((i: any) => i._id !== item._id);
+      } else {
+        updatedWishlist = [...wishlist, item._id];
+        wishlistItems.push(item);
+      }
+
+      setWishlist(updatedWishlist);
+      await AsyncStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+      await AsyncStorage.setItem("wishlistItems", JSON.stringify(wishlistItems));
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
     }
   };
 
@@ -124,6 +154,15 @@ const CategoryProductsScreen = () => {
           </View>
         )}
       />
+
+      <Modal
+        visible={isSwapModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsSwapModalVisible(false)}
+      >
+        <SwapRequest onClose={() => setIsSwapModalVisible(false)} />
+      </Modal>
     </View>
   );
 };
@@ -160,6 +199,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
     marginBottom: 10,
+    paddingHorizontal: 15,
   },
   card: {
     backgroundColor: "#F4ECF6",

@@ -125,7 +125,7 @@ const RequestsScreen = () => {
           data={requestsData}
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       ) : (
         <View style={{ alignItems: "center", marginTop: 100 }}>
