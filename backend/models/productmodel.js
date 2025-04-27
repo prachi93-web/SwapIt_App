@@ -20,7 +20,7 @@ const SwapItemSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Electronics', 'Kitchen', 'Books', 'Clothing', 'Furniture', 'Others'], // Customize as needed
+    enum: ['Electronic Appliances', 'Kitchen Appliances', 'Furniture', 'Toys and Sports', 'Men"s Wear', 'Women"s Wear', 'Footwear', 'Accessories', 'Mobile Phones', 'Computers & Laptops', 'Gaming Consoles', 'Cameras & Photography', 'Academic Books', 'Novels & Comics', 'Office Supplies', 'Bicycle', 'Motorcycle & Scooter','Car Accessories'], // Customize as needed
     required: true,
   },
   imageUris: {

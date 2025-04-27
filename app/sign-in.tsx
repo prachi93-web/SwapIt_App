@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../src/firebaseConfig";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const SignInScreen = () => {
   const router = useRouter();
@@ -20,9 +21,17 @@ const SignInScreen = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      console.log("✅ Firebase login successful:", user);
+      // Fetch user data from Firestore
+      const db = getFirestore();
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.data();
 
-      await AsyncStorage.setItem("user", JSON.stringify({ uid: user.uid, email: user.email }));
+      // Store user data in AsyncStorage
+      await AsyncStorage.setItem("user", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        fullName: userData?.fullName || ""
+      }));
 
       console.log("🔁 Redirecting to dashboard...");
       router.replace("/dashboard");
@@ -65,7 +74,7 @@ const SignInScreen = () => {
 
       {/* Sign Up Link */}
       <Text style={styles.footerText}>
-        Don’t have an account?{" "}
+        Don't have an account?{" "}
         <Text style={styles.link} onPress={() => router.push("/sign-up")}>Sign Up</Text>
       </Text>
     </View>

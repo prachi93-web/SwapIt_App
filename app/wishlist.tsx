@@ -1,21 +1,35 @@
-import React from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useFonts, Itim_400Regular } from "@expo-google-fonts/itim";
 
 const WishlistScreen = () => {
   const router = useRouter();
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [fontsLoaded] = useFonts({ Itim: Itim_400Regular });
 
-  const items = [
-    { id: 1, name: "iPhone pro", wants: "a laptop", location: "New York", image: require("../assets/kettle.png") },
-    { id: 2, name: "Western Dress", wants: "a Baggy Jeans", location: "Washington DC", image: require("../assets/dress.png") },
-    { id: 3, name: "Bicycle", wants: "a HeadSet", location: "Jaipur", image: require("../assets/bike.png") },
-    { id: 4, name: "Guitar", wants: "a Piano", location: "Mumbai", image: require("../assets/guitar.png") },
-    { id: 5, name: "Bicycle", wants: "a HeadSet", location: "Jaipur", image: require("../assets/bike.png") },
-    { id: 6, name: "Bicycle", wants: "a HeadSet", location: "Jaipur", image: require("../assets/bike.png") },
-  ];
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("wishlistItems");
+        const parsed = stored ? JSON.parse(stored) : [];
+        setWishlistItems(parsed);
+      } catch (error) {
+        console.error("Error loading wishlist:", error);
+      }
+    };
+
+    fetchWishlist();
+  }, []);
 
   if (!fontsLoaded) return null;
 
@@ -28,29 +42,38 @@ const WishlistScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#7E4DD1" />
           </TouchableOpacity>
           <Text style={styles.logo}>Wishlist</Text>
-          <View style={{ width: 24 }} /> {/* Placeholder to balance layout */}
+          <View style={{ width: 24 }} />
         </View>
       </View>
 
       {/* Content */}
       <View style={styles.container}>
         <FlatList
-          data={items}
-          keyExtractor={(item) => item.id.toString()}
+          data={wishlistItems}
+          keyExtractor={(item, index) => item._id?.toString() || index.toString()}
           numColumns={2}
           columnWrapperStyle={{ justifyContent: "space-between" }}
           contentContainerStyle={{ paddingBottom: 80 }}
+          ListEmptyComponent={
+            <Text style={{ textAlign: "center", marginTop: 20, color: "gray" }}>
+              Your wishlist is empty.
+            </Text>
+          }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Image source={item.image} style={styles.cardImage} />
-              <Text style={styles.cardTitle}>{item.name}</Text>
+              <Image
+                source={{ uri: item.imageUris?.[0] || "https://via.placeholder.com/150" }}
+                style={styles.cardImage}
+              />
+              <Text style={styles.cardTitle}>{item.productName}</Text>
               <Text style={styles.cardSubtext}>Wants {item.wants}</Text>
               <Text style={styles.cardLocation}>
-                <Ionicons name="location-outline" size={12} color="gray" /> {item.location}
+                <Ionicons name="location-outline" size={12} color="gray" /> {item.city}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.swapButton}
-                onPress={() => router.push("/swaprequest")} >
+                onPress={() => router.push("/swaprequest")}
+              >
                 <Text style={styles.swapText}>Swap now</Text>
               </TouchableOpacity>
 

@@ -24,7 +24,7 @@ app.use(express.json({ limit: '100mb' }));
 // Mount routes
 app.use('/api/swaps', swapRoutes);
 app.use('/api', uploadRoute);
-app.use('/api/items', itemsRoute);
+app.use('/api', itemsRoute);
 
 // Connect to MongoDB (no need for deprecated options anymore)
 mongoose.connect(process.env.MONGODB_URI)

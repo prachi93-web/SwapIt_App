@@ -83,15 +83,23 @@ const CategoriesScreen = () => {
           <View key={index} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             <View style={styles.grid}>
-            {section.data.map((item, idx) => (
-  <TouchableOpacity key={idx} style={styles.categoryBox}>
-    <View style={styles.icon}>
-      <Image source={item.icon} style={{ width: 90, height: 90, resizeMode: "contain" }} />
-    </View>
-    <Text style={styles.label}>{item.label}</Text>
-  </TouchableOpacity>
-))}
-
+              {section.data.map((item, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.categoryBox}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/categoryProducts',
+                      params: { category: item.label }, // <-- Sending selected category
+                    });
+                  }}
+                >
+                  <View style={styles.icon}>
+                    <Image source={item.icon} style={{ width: 90, height: 90, resizeMode: "contain" }} />
+                  </View>
+                  <Text style={styles.label}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         ))}
@@ -120,76 +128,76 @@ const CategoriesScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "#fff",
-    },
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-      backgroundColor: "#fff",
-      paddingVertical: 10,
-      paddingHorizontal: 15,
-      elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 5,
-    },
-    logo: {
-      fontSize: 24,
-      color: "#7E4DD1",
-    },
-    section: {
-      marginBottom: 20,
-      paddingHorizontal: 15,
-    },
-    sectionTitle: {
-      fontSize: 14,
-      fontWeight: "bold",
-      marginBottom: 20,
-      marginTop: 0,
-      color: "#7E4DD1",
-    },
-    grid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 18,
-    },
-    categoryBox: {
-        width: 90,
-        alignItems: "center",
-        marginBottom: 8,
-      },
-      icon: {
-        width: 90,
-        height: 90,
-        borderRadius: 15,
-        backgroundColor: "#E7DAEA",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 10,
-        resizeMode: "contain",
-      },
-      label: {
-        fontSize: 13,
-        textAlign: "center",
-        color: "#000",
-        marginTop: 6,
-      },
-    navbar: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      paddingVertical: 12,
-      borderTopWidth: 1,
-      borderColor: "#ccc",
-      position: "absolute",
-      bottom: 0,
-      width: "100%",
-      backgroundColor: "#fff",
-    },
-  });
-  
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+  logo: {
+    fontSize: 24,
+    color: "#7E4DD1",
+  },
+  section: {
+    marginBottom: 20,
+    paddingHorizontal: 15,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 20,
+    marginTop: 0,
+    color: "#7E4DD1",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 18,
+  },
+  categoryBox: {
+    width: 90,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  icon: {
+    width: 90,
+    height: 90,
+    borderRadius: 15,
+    backgroundColor: "#E7DAEA",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+    resizeMode: "contain",
+  },
+  label: {
+    fontSize: 13,
+    textAlign: "center",
+    color: "#000",
+    marginTop: 6,
+  },
+  navbar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: "#fff",
+  },
+});
+
 export default CategoriesScreen;

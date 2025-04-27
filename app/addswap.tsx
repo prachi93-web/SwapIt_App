@@ -61,7 +61,7 @@ const AddSwapScreen = () => {
     };
   
     try {
-      const response = await fetch("http://localhost:5000/api/swaps", {
+      const response = await fetch("http://10.10.24.70:5000/api/swaps", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,13 +136,25 @@ const AddSwapScreen = () => {
               style={styles.picker}
               dropdownIconColor="#7E4DD1"
             >
-              <Picker.Item label="Electronics" value="Electronics" />
-              <Picker.Item label="Kitchen" value="Kitchen" />
+              <Picker.Item label="Electronic Appliances" value="Electronic Appliances" />
+              <Picker.Item label="Kitchen Appliance" value="Kitchen Appliances" />
               <Picker.Item label="Books" value="Books" />
-              <Picker.Item label="Clothing" value="Clothing" />
               <Picker.Item label="Furniture" value="Furniture" />
-              <Picker.Item label="Toys" value="Toys" />
-              <Picker.Item label="Others" value="Others" />
+              <Picker.Item label="Toys and Sports" value="Toys and Sports" />
+              <Picker.Item label="Men's Wear" value="Men's Wear" />
+              <Picker.Item label="Women's Wear" value="Women's Wear" />
+              <Picker.Item label="Footwear" value="Footwear" />
+              <Picker.Item label="Accessories" value="Accessories" />
+              <Picker.Item label="Mobile Phones" value="Mobile Phones" />
+              <Picker.Item label="Computers & Laptops" value="Computers & Laptops" />
+              <Picker.Item label="Gaming Consoles" value="Gaming Consoles" />
+              <Picker.Item label="Cameras & Photography" value="Cameras & Photography" />
+              <Picker.Item label="Academic Books" value="Academic Books" />
+              <Picker.Item label="Novels & Comics" value="Novels & Comics" />
+              <Picker.Item label="Office Supplies" value="Office Supplies" />
+              <Picker.Item label="Bicycle" value="Bicycle" />
+              <Picker.Item label="Motorcycle & Scooter" value="Motorcycle & Scooter" />
+              <Picker.Item label="Car Accessories" value="Car Accessories" />
             </Picker>
           </View>
 
@@ -231,12 +243,19 @@ const styles = StyleSheet.create({
     borderColor: "#B088EF",
     borderWidth: 1,
     borderRadius: 8,
+    fontSize: 14,
     backgroundColor: "#F5ECFF",
     overflow: "hidden",
   },
   picker: {
-    height: Platform.OS === "android" ? 50 : undefined,
-    color: "#000",
+    height: 50,
+    borderColor: "#B088EF",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: "#7E4DD1",
+    backgroundColor: "#F5ECFF",
   },
   uploadContainer: {
     height: 50,
