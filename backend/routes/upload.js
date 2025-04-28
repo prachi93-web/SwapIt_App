@@ -5,11 +5,23 @@ const upload = require('../middleware/uploadm');
 
 router.post('/upload', upload.single('image'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    console.log('Upload successful:', req.file);
     const imageUrl = req.file.path; // Cloudinary URL
-    // Save to MongoDB if needed
-    res.status(200).json({ url: imageUrl });
+
+    res.status(200).json({ 
+      url: imageUrl,
+      message: 'Image uploaded successfully'
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Upload failed' });
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      message: 'Upload failed',
+      error: error.message 
+    });
   }
 });
 

@@ -30,7 +30,8 @@ const SignInScreen = () => {
       await AsyncStorage.setItem("user", JSON.stringify({
         uid: user.uid,
         email: user.email,
-        fullName: userData?.fullName || ""
+        fullName: userData?.fullName || "",
+        contact: userData?.contactNumber || ""
       }));
 
       console.log("🔁 Redirecting to dashboard...");

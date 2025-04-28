@@ -18,12 +18,22 @@ const WishlistScreen = () => {
   const router = useRouter();
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [isSwapModalVisible, setIsSwapModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
   const [fontsLoaded] = useFonts({ Itim: Itim_400Regular });
 
   useEffect(() => {
     const loadWishlist = async () => {
       try {
-        const storedItems = await AsyncStorage.getItem("wishlistItems");
+        // Get current user data
+        const userData = await AsyncStorage.getItem("user");
+        if (!userData) {
+          throw new Error("User not found");
+        }
+        const user = JSON.parse(userData);
+
+        // Get user's wishlist items
+        const wishlistItemsKey = `wishlistItems_${user.uid}`;
+        const storedItems = await AsyncStorage.getItem(wishlistItemsKey);
         if (storedItems) {
           setWishlistItems(JSON.parse(storedItems));
         }
@@ -37,26 +47,70 @@ const WishlistScreen = () => {
 
   const toggleWishlist = async (item: any) => {
     try {
-      const storedItems = await AsyncStorage.getItem("wishlistItems");
-      let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
-      const updatedItems = wishlistItems.filter((i: any) => i._id !== item._id);
-      
-      setWishlistItems(updatedItems);
-      await AsyncStorage.setItem("wishlistItems", JSON.stringify(updatedItems));
-      
-      // Also update the wishlist IDs
-      const storedWishlist = await AsyncStorage.getItem("wishlist");
-      if (storedWishlist) {
-        const wishlist = JSON.parse(storedWishlist);
-        const updatedWishlist = wishlist.filter((id: string) => id !== item._id);
-        await AsyncStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+      // Get current user data
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
       }
+      const user = JSON.parse(userData);
+
+      // Get user's wishlist
+      const wishlistKey = `wishlist_${user.uid}`;
+      const wishlistItemsKey = `wishlistItems_${user.uid}`;
+      
+      const storedWishlist = await AsyncStorage.getItem(wishlistKey);
+      const storedItems = await AsyncStorage.getItem(wishlistItemsKey);
+      
+      let wishlist = storedWishlist ? JSON.parse(storedWishlist) : [];
+      let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
+
+      // Remove from wishlist
+      wishlist = wishlist.filter((id: string) => id !== item._id);
+      wishlistItems = wishlistItems.filter((i: any) => i._id !== item._id);
+      
+      setWishlistItems(wishlistItems);
+      await AsyncStorage.setItem(wishlistKey, JSON.stringify(wishlist));
+      await AsyncStorage.setItem(wishlistItemsKey, JSON.stringify(wishlistItems));
     } catch (error) {
       console.error("Error updating wishlist:", error);
     }
   };
 
   if (!fontsLoaded) return null;
+
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={styles.card}>
+      <Image
+        source={{ 
+          uri: item.imageUri || "https://via.placeholder.com/150",
+          cache: "reload"
+        }}
+        style={styles.cardImage}
+        onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+      />
+      <Text style={styles.cardTitle}>{item.productName}</Text>
+      <Text style={styles.cardSubtext}>Wants {item.wants}</Text>
+      <Text style={styles.cardLocation}>
+        <Ionicons name="location-outline" size={12} color="gray" /> {item.city}
+      </Text>
+      <TouchableOpacity
+        style={styles.swapButton}
+        onPress={() => {
+          setSelectedItem(item);
+          setIsSwapModalVisible(true);
+        }}
+      >
+        <Text style={styles.swapText}>Swap now</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.heartIcon}
+        onPress={() => toggleWishlist(item)}
+      >
+        <Ionicons name="heart" size={17} color="#7E4DD1" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <>
@@ -78,32 +132,7 @@ const WishlistScreen = () => {
               Your wishlist is empty.
             </Text>
           }
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Image
-                source={{ uri: item.imageUris?.[0] }}
-                style={styles.cardImage}
-              />
-              <Text style={styles.cardTitle}>{item.productName}</Text>
-              <Text style={styles.cardSubtext}>Wants {item.wants}</Text>
-              <Text style={styles.cardLocation}>
-                <Ionicons name="location-outline" size={12} color="gray" /> {item.city}
-              </Text>
-              <TouchableOpacity
-                style={styles.swapButton}
-                onPress={() => setIsSwapModalVisible(true)}
-              >
-                <Text style={styles.swapText}>Swap now</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.heartIcon}
-                onPress={() => toggleWishlist(item)}
-              >
-                <Ionicons name="heart" size={17} color="#7E4DD1" />
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={renderItem}
         />
       </View>
 
@@ -113,7 +142,10 @@ const WishlistScreen = () => {
         transparent
         onRequestClose={() => setIsSwapModalVisible(false)}
       >
-        <SwapRequest onClose={() => setIsSwapModalVisible(false)} />
+        <SwapRequest 
+          onClose={() => setIsSwapModalVisible(false)} 
+          productId={selectedItem?._id}
+        />
       </Modal>
 
       {/* Bottom Navigation */}
@@ -142,7 +174,6 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: "#fff",
-    paddingHorizontal: 10,
   },
   header: {
     flexDirection: "row",
@@ -167,6 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
     marginHorizontal: 10,
+    paddingHorizontal: 10,
   },
   card: {
     backgroundColor: "#F4ECF6",

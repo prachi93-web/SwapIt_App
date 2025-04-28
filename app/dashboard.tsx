@@ -32,9 +32,20 @@ const DashboardScreen = () => {
     imageUris: string[];
     category: string;
     createdAt: string;
+    userId: string;
   }[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [wishlistMessage, setWishlistMessage] = useState("");
+  const [selectedItem, setSelectedItem] = useState<{ 
+    _id: string; 
+    productName: string; 
+    wants: string; 
+    city: string; 
+    imageUris: string[]; 
+    category: string; 
+    createdAt: string;
+    userId: string;
+  } | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -83,7 +94,14 @@ const DashboardScreen = () => {
 
   const loadWishlistFromStorage = async () => {
     try {
-      const stored = await AsyncStorage.getItem("wishlist");
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+
+      const wishlistKey = `wishlist_${user.uid}`;
+      const stored = await AsyncStorage.getItem(wishlistKey);
       if (stored) {
         setWishlist(JSON.parse(stored));
       }
@@ -94,27 +112,50 @@ const DashboardScreen = () => {
 
   const toggleWishlist = async (item: any) => {
     try {
-      let updatedWishlist;
-      const storedItems = await AsyncStorage.getItem("wishlistItems");
+      // Get current user data
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+
+      // Get user's wishlist
+      const wishlistKey = `wishlist_${user.uid}`;
+      const wishlistItemsKey = `wishlistItems_${user.uid}`;
+      
+      const storedWishlist = await AsyncStorage.getItem(wishlistKey);
+      const storedItems = await AsyncStorage.getItem(wishlistItemsKey);
+      
+      let wishlist = storedWishlist ? JSON.parse(storedWishlist) : [];
       let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
 
       if (wishlist.includes(item._id)) {
-        updatedWishlist = wishlist.filter((id) => id !== item._id);
+        // Remove from wishlist
+        wishlist = wishlist.filter((id: string) => id !== item._id);
         wishlistItems = wishlistItems.filter((i: any) => i._id !== item._id);
         setWishlistMessage("Product removed from wishlist");
       } else {
-        updatedWishlist = [...wishlist, item._id];
-        wishlistItems.push(item);
+        // Add to wishlist - only store essential data
+        wishlist.push(item._id);
+        wishlistItems.push({
+          _id: item._id,
+          productName: item.productName,
+          wants: item.wants,
+          city: item.city,
+          imageUri: item.imageUris?.[0], // Store only the first image URL
+          category: item.category
+        });
         setWishlistMessage("Product saved in your wishlist");
       }
 
-      setWishlist(updatedWishlist);
-      await AsyncStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
-      await AsyncStorage.setItem("wishlistItems", JSON.stringify(wishlistItems));
+      setWishlist(wishlist);
+      await AsyncStorage.setItem(wishlistKey, JSON.stringify(wishlist));
+      await AsyncStorage.setItem(wishlistItemsKey, JSON.stringify(wishlistItems));
 
       setTimeout(() => setWishlistMessage(""), 2000);
     } catch (err) {
       console.error("Error updating wishlist:", err);
+      Alert.alert("Error", "Failed to update wishlist. Please try again.");
     }
   };
 
@@ -177,7 +218,11 @@ const DashboardScreen = () => {
 
               <TouchableOpacity
                 style={styles.swapButton}
-                onPress={() => setIsSwapModalVisible(true)}
+                onPress={() => {
+                  console.log('Selected item for swap:', item);
+                  setSelectedItem(item);
+                  setIsSwapModalVisible(true);
+                }}
               >
                 <Text style={styles.swapText}>Swap now</Text>
               </TouchableOpacity>
@@ -203,7 +248,11 @@ const DashboardScreen = () => {
         transparent
         onRequestClose={() => setIsSwapModalVisible(false)}
       >
-        <SwapRequest onClose={() => setIsSwapModalVisible(false)} />
+        <SwapRequest 
+          onClose={() => setIsSwapModalVisible(false)} 
+          productId={selectedItem?._id}
+          productOwnerId={selectedItem?.userId}
+        />
       </Modal>
 
       <View style={styles.bottomNav}>

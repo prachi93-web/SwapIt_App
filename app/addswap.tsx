@@ -25,7 +25,7 @@ const AddSwapScreen = () => {
   const [wants, setWants] = useState("");
   const [city, setCity] = useState("");
   const [pinCode, setPinCode] = useState("");
-  const [category, setCategory] = useState("Electronics");
+  const [category, setCategory] = useState("Electronic Appliances");
   const [imageUris, setImageUris] = useState<string[]>([]);
 
   const pickImage = async () => {

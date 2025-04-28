@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
+  Image,
+  ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 interface Props {
   onClose: () => void;
@@ -16,6 +22,121 @@ const SwapRequest: React.FC<Props> = ({ onClose }) => {
   const [productName, setProductName] = useState("");
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
+  const testBackendConnection = async () => {
+    try {
+      console.log('Testing backend connection...');
+      const response = await fetch("http://10.10.24.70:5000/api/test");
+      const data = await response.json();
+      console.log('Backend test response:', data);
+      return true;
+    } catch (error) {
+      console.error('Backend connection test failed:', error);
+      return false;
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Validate all fields
+    if (!productName || !city || !pincode || !imageUri) {
+      Alert.alert("Error", "Please fill in all fields and upload an image");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('Starting swap request process...');
+
+      // Get current user data
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+      console.log('Current user:', user);
+
+      // Create swap request object (send local imageUri, let backend handle Cloudinary upload)
+      const swapRequest = {
+        productName,
+        city,
+        pincode,
+        imageUri, // local URI, backend will upload to Cloudinary
+        requesterId: user.uid,
+        requesterName: user.fullName,
+        requesterContact: user.email,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+
+      console.log('Sending swap request:', JSON.stringify(swapRequest, null, 2));
+
+      // Send request to backend
+      const response = await fetch("http://10.10.24.70:5000/api/swap-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(swapRequest),
+      });
+
+      console.log('Response status:', response.status);
+      const swapResponseText = await response.text();
+      console.log('Response text:', swapResponseText);
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(swapResponseText);
+        } catch (e) {
+          errorData = { message: swapResponseText };
+        }
+        throw new Error(errorData.message || "Failed to send swap request");
+      }
+
+      const result = JSON.parse(swapResponseText);
+      console.log('Swap request sent successfully:', result);
+
+      // Close the modal and show success message
+      onClose();
+      Alert.alert(
+        "Success",
+        "Swap request sent successfully! The owner will be notified.",
+        [{ 
+          text: "OK",
+          onPress: () => {
+            router.replace("/dashboard");
+          }
+        }]
+      );
+    } catch (error: any) {
+      console.error("Error sending swap request:", error);
+      Alert.alert("Error", error?.message || "Failed to send swap request. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.overlay}>
@@ -26,7 +147,7 @@ const SwapRequest: React.FC<Props> = ({ onClose }) => {
         </TouchableOpacity>
 
         {/* Inputs */}
-        <View style={styles.content}>
+        <ScrollView style={styles.content}>
           <TextInput
             style={styles.input}
             placeholder="Product Name"
@@ -52,15 +173,27 @@ const SwapRequest: React.FC<Props> = ({ onClose }) => {
             keyboardType="numeric"
           />
 
-          <TouchableOpacity style={styles.uploadButton}>
-            <Feather name="upload" size={20} color="#7E4DD1" />
-            <Text style={styles.uploadText}>Upload image of product</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
+            ) : (
+              <>
+                <Feather name="upload" size={20} color="#7E4DD1" />
+                <Text style={styles.uploadText}>Upload image of product</Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>Send Swap Request</Text>
+          <TouchableOpacity 
+            style={[styles.sendButton, loading && styles.sendButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.sendButtonText}>
+              {loading ? "Sending..." : "Send Swap Request"}
+            </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -115,10 +248,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
   },
+  uploadedImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+  },
   sendButton: {
     backgroundColor: "#7E4DD1",
     paddingVertical: 12,
     borderRadius: 10,
+  },
+  sendButtonDisabled: {
+    opacity: 0.7,
   },
   sendButtonText: {
     color: "#fff",

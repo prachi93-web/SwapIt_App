@@ -36,7 +36,8 @@ export default function SignUpScreen() {
       await AsyncStorage.setItem("user", JSON.stringify({
         uid: user.uid,
         email: user.email,
-        fullName: fullName
+        fullName: fullName,
+        contact: contactNumber
       }));
   
       // Navigate to dashboard after successful signup

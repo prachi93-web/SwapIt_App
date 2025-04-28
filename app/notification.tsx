@@ -1,67 +1,59 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TABS = ["Pending", "Accepted", "Cancelled"];
 
 type RequestItem = {
-  id: string;
-  name: string;
-  phone: string;
-  country: string;
-  product: string;
+  _id: string;
+  productName: string;
   city: string;
   pincode: string;
-  image: any;
+  imageUri: string;
+  requesterId: string;
+  requesterName: string;
+  requesterContact: string;
+  status: string;
+  createdAt: string;
+  productOwnerId: string;
 };
-
-const requestsData: RequestItem[] = [
-  {
-    id: "1",
-    name: "Prachi Mehetre",
-    phone: "+91-7058817101",
-    country: "India",
-    product: "Bicycle",
-    city: "Bandra, Mumbai",
-    pincode: "400012",
-    image: require("../assets/bike.png"),
-  },
-  {
-    id: "2",
-    name: "Sakshi Gambhire",
-    phone: "+91-7058817101",
-    country: "India",
-    product: "Kettle",
-    city: "Shivaji nagar, Pune",
-    pincode: "458585",
-    image: require("../assets/kettle.png"),
-  },
-  {
-    id: "3",
-    name: "Sanskruti Patil",
-    phone: "+91-7058817101",
-    country: "India",
-    product: "Guitar",
-    city: "Panchavati, Nashik",
-    pincode: "422003",
-    image: require("../assets/guitar.png"),
-  },
-  {
-    id: "4",
-    name: "Divya Bhavsar",
-    phone: "+91-7058817101",
-    country: "India",
-    product: "Western Dress",
-    city: "Panchavati, Nashik",
-    pincode: "422003",
-    image: require("../assets/dress.png"),
-  },
-];
 
 const RequestsScreen = () => {
   const [selectedTab, setSelectedTab] = useState("Pending");
+  const [requests, setRequests] = useState<RequestItem[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+
+      console.log('Fetching requests for user:', user.uid);
+
+      const response = await fetch(`http://10.10.24.70:5000/api/swap-requests?userId=${user.uid}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch requests");
+      }
+
+      const requests = await response.json();
+      console.log('Received requests:', requests);
+      setRequests(requests);
+    } catch (error) {
+      console.error("Error loading requests:", error);
+      Alert.alert("Error", "Failed to load requests. Please try again.");
+    }
+  };
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(" ");
@@ -69,36 +61,94 @@ const RequestsScreen = () => {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const handleAccept = async (requestId: string) => {
+    try {
+      console.log('Accepting request:', requestId);
+      const response = await fetch(`http://10.10.24.70:5000/api/swap-requests/${requestId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "accepted" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to accept request");
+      }
+
+      await loadRequests();
+      Alert.alert("Success", "Request accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      Alert.alert("Error", "Failed to accept request. Please try again.");
+    }
+  };
+
+  const handleDecline = async (requestId: string) => {
+    try {
+      console.log('Declining request:', requestId);
+      const response = await fetch(`http://10.10.24.70:5000/api/swap-requests/${requestId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to decline request");
+      }
+
+      await loadRequests();
+      Alert.alert("Success", "Request declined successfully!");
+    } catch (error) {
+      console.error("Error declining request:", error);
+      Alert.alert("Error", "Failed to decline request. Please try again.");
+    }
+  };
+
+  const filteredRequests = requests.filter(request => request.status === selectedTab.toLowerCase());
+
   const renderCard = ({ item }: { item: RequestItem }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+          <Text style={styles.avatarText}>{getInitials(item.requesterName)}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.country}>{item.country}</Text>
+          <Text style={styles.name}>{item.requesterName}</Text>
+          <Text style={styles.country}>India</Text>
         </View>
-        <Text style={styles.phone}>{item.phone}</Text>
+        <Text style={styles.phone}>{item.requesterContact}</Text>
       </View>
 
       <View style={styles.detailsRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.detail}>Product Name : {item.product}</Text>
-          <Text style={styles.detail}>City : {item.city}</Text>
-          <Text style={styles.detail}>Pincode : {item.pincode}</Text>
+          <Text style={styles.detail}>Product Name: {item.productName}</Text>
+          <Text style={styles.detail}>City: {item.city}</Text>
+          <Text style={styles.detail}>Pincode: {item.pincode}</Text>
 
-          <View style={styles.buttonsRow}>
-            <TouchableOpacity style={styles.acceptBtn}>
-              <Text style={styles.acceptText}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.declineBtn}>
-              <Text style={styles.declineText}>Decline</Text>
-            </TouchableOpacity>
-          </View>
+          {selectedTab === "Pending" && (
+            <View style={styles.buttonsRow}>
+              <TouchableOpacity 
+                style={styles.acceptBtn}
+                onPress={() => handleAccept(item._id)}
+              >
+                <Text style={styles.acceptText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.declineBtn}
+                onPress={() => handleDecline(item._id)}
+              >
+                <Text style={styles.declineText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        <Image source={item.image} style={styles.productImage} />
+        <Image source={{ uri: item.imageUri }} style={styles.productImage} />
       </View>
     </View>
   );
@@ -120,18 +170,17 @@ const RequestsScreen = () => {
         ))}
       </View>
 
-      {selectedTab === "Pending" ? (
-        <FlatList
-          data={requestsData}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCard}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      ) : (
-        <View style={{ alignItems: "center", marginTop: 100 }}>
-          <Text style={{ color: "gray", fontSize: 16 }}>No {selectedTab} requests</Text>
-        </View>
-      )}
+      <FlatList
+        data={filteredRequests}
+        keyExtractor={(item) => item._id}
+        renderItem={renderCard}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        ListEmptyComponent={
+          <View style={{ alignItems: "center", marginTop: 100 }}>
+            <Text style={{ color: "gray", fontSize: 16 }}>No {selectedTab} requests</Text>
+          </View>
+        }
+      />
     </View>
   );
 };

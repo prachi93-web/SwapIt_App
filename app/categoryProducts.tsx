@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios, { AxiosError } from "axios";
@@ -22,6 +23,8 @@ interface Product {
   wants: string;
   city: string;
   imageUris: string[];
+  category: string;
+  userId: string;
 }
 
 const CategoryProductsScreen = () => {
@@ -31,6 +34,70 @@ const CategoryProductsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isSwapModalVisible, setIsSwapModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Product | null>(null);
+
+  const toggleWishlist = async (item: Product) => {
+    try {
+      // Get current user data
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+
+      // Get user's wishlist
+      const wishlistKey = `wishlist_${user.uid}`;
+      const wishlistItemsKey = `wishlistItems_${user.uid}`;
+      
+      const storedWishlist = await AsyncStorage.getItem(wishlistKey);
+      const storedItems = await AsyncStorage.getItem(wishlistItemsKey);
+      
+      let wishlist = storedWishlist ? JSON.parse(storedWishlist) : [];
+      let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
+
+      if (wishlist.includes(item._id)) {
+        // Remove from wishlist
+        wishlist = wishlist.filter((id: string) => id !== item._id);
+        wishlistItems = wishlistItems.filter((i: any) => i._id !== item._id);
+      } else {
+        // Add to wishlist - only store essential data
+        wishlist.push(item._id);
+        wishlistItems.push({
+          _id: item._id,
+          productName: item.productName,
+          wants: item.wants,
+          city: item.city,
+          imageUri: item.imageUris?.[0], // Store only the first image URL
+          category: item.category
+        });
+      }
+
+      setWishlist(wishlist);
+      await AsyncStorage.setItem(wishlistKey, JSON.stringify(wishlist));
+      await AsyncStorage.setItem(wishlistItemsKey, JSON.stringify(wishlistItems));
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
+      Alert.alert("Error", "Failed to update wishlist. Please try again.");
+    }
+  };
+
+  const loadWishlist = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      const user = JSON.parse(userData);
+
+      const wishlistKey = `wishlist_${user.uid}`;
+      const stored = await AsyncStorage.getItem(wishlistKey);
+      if (stored) {
+        setWishlist(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Error loading wishlist:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchCategoryProducts = async () => {
@@ -52,44 +119,11 @@ const CategoryProductsScreen = () => {
       }
     };
 
-    const loadWishlist = async () => {
-      try {
-        const storedWishlist = await AsyncStorage.getItem("wishlist");
-        if (storedWishlist) {
-          setWishlist(JSON.parse(storedWishlist));
-        }
-      } catch (error) {
-        console.error("Error loading wishlist:", error);
-      }
-    };
-
     if (category) {
       fetchCategoryProducts();
       loadWishlist();
     }
   }, [category]);
-
-  const toggleWishlist = async (item: Product) => {
-    try {
-      let updatedWishlist;
-      const storedItems = await AsyncStorage.getItem("wishlistItems");
-      let wishlistItems = storedItems ? JSON.parse(storedItems) : [];
-
-      if (wishlist.includes(item._id)) {
-        updatedWishlist = wishlist.filter((id) => id !== item._id);
-        wishlistItems = wishlistItems.filter((i: any) => i._id !== item._id);
-      } else {
-        updatedWishlist = [...wishlist, item._id];
-        wishlistItems.push(item);
-      }
-
-      setWishlist(updatedWishlist);
-      await AsyncStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
-      await AsyncStorage.setItem("wishlistItems", JSON.stringify(wishlistItems));
-    } catch (error) {
-      console.error("Error updating wishlist:", error);
-    }
-  };
 
   if (loading) {
     return (
@@ -120,6 +154,7 @@ const CategoryProductsScreen = () => {
         numColumns={2}
         columnWrapperStyle={styles.row}
         keyExtractor={(item) => item._id}
+        contentContainerStyle={{ paddingBottom: 50 }}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Image
@@ -136,7 +171,10 @@ const CategoryProductsScreen = () => {
 
             <TouchableOpacity
               style={styles.swapButton}
-              onPress={() => setIsSwapModalVisible(true)}
+              onPress={() => {
+                setSelectedItem(item);
+                setIsSwapModalVisible(true);
+              }}
             >
               <Text style={styles.swapText}>Swap now</Text>
             </TouchableOpacity>
@@ -161,7 +199,11 @@ const CategoryProductsScreen = () => {
         transparent
         onRequestClose={() => setIsSwapModalVisible(false)}
       >
-        <SwapRequest onClose={() => setIsSwapModalVisible(false)} />
+        <SwapRequest 
+          onClose={() => setIsSwapModalVisible(false)} 
+          productId={selectedItem?._id}
+          productOwnerId={selectedItem?.userId}
+        />
       </Modal>
     </View>
   );
