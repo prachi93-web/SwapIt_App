@@ -30,7 +30,7 @@ const AddSwapScreen = () => {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsMultipleSelection: true,
       quality: 1,
     });
@@ -57,28 +57,40 @@ const AddSwapScreen = () => {
       city,
       pinCode,
       category,
-      imageUris, // make sure these are actual URLs or base64 strings
+      imageUris,
     };
   
     try {
-      const response = await fetch("http://10.10.24.70:5000/api/swaps", {
+      const response = await fetch("https://swapit-backend.onrender.com/api/swaps", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify(swapData),
       });
   
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse response:", responseText);
+        throw new Error("Invalid response from server");
+      }
+  
       if (response.ok) {
-        Alert.alert("Swap added successfully!");
+        Alert.alert("Success", "Swap added successfully!");
         router.push("/dashboard");
       } else {
         Alert.alert("Error", result.message || "Failed to add swap.");
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong.");
-      console.error(error);
+      console.error("Error details:", error);
+      Alert.alert(
+        "Error", 
+        "Failed to add swap. Please check your connection and try again."
+      );
     }
   };
   
